@@ -3,7 +3,6 @@ package tourGuide.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
