@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -20,9 +22,10 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 import tourGuide.helper.InternalTestHelper;
+import tourGuide.model.nearby.NbAttraction;
 import tourGuide.tracker.Tracker;
-import tourGuide.user.User;
-import tourGuide.user.UserReward;
+import tourGuide.model.user.User;
+import tourGuide.model.user.UserReward;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
@@ -34,6 +37,8 @@ public class TourGuideService {
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
 	boolean testMode = true;
+
+	private ExecutorService trackUserLocationThreadPool = Executors.newFixedThreadPool(100);
 	
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
@@ -99,6 +104,35 @@ public class TourGuideService {
 		
 		return nearbyAttractions;
 	}
+
+	public List<Attraction> getFiveNearestAttractions(User user, Location location) {
+
+		return gpsUtil.getAttractions().stream()
+				.map(attraction -> {
+							NbAttraction nbAttraction = new NbAttraction(attraction.attractionName,
+									attraction.city, attraction.state, attraction.latitude, attraction.longitude
+									, rewardsService.getDistance(location, new Location(attraction.latitude, attraction.longitude))
+									,0);
+							return nbAttraction;
+						}
+				).sorted()
+				.limit(5)
+				.parallel()
+				.peek(nbAttraction -> nbAttraction.setRewardPoints(rewardsService.getRewardPoints(nbAttraction.attractionId, user)))
+				.collect(Collectors.toList());
+	}
+
+	/*public NearByAttractions getNearByAttractions(String userName) {
+		NearByAttractions nearbyAttractions = new NearByAttractions();
+		User user = getUser(userName);
+		Location userLocation = getUserLocation(user).location;
+
+		nearbyAttractions.setUser(new NBAUser(userLocation));
+
+		nearbyAttractions.setAttractions(rewardsService.getFiveNearestAttractions(user, userLocation));
+
+		return nearbyAttractions;
+	}*/
 	
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() { 
