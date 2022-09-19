@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,6 +30,7 @@ import tripPricer.Provider;
 import tripPricer.TripPricer;
 
 @Service
+@Slf4j
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
 	private final GpsUtil gpsUtil;
@@ -51,7 +52,7 @@ public class TourGuideService {
 			logger.debug("Finished initializing users");
 		}
 		tracker = new Tracker(this);
-		addShutDownHook();
+		trackUserLocationAwaitTerminationAfterShutdown();
 	}
 	
 	public List<UserReward> getUserRewards(User user) {
@@ -59,10 +60,13 @@ public class TourGuideService {
 	}
 	
 	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ?
-			user.getLastVisitedLocation() :
-			trackUserLocation(user);
-		return visitedLocation;
+		try {
+			return (user.getVisitedLocations().size() > 0) ?
+					user.getLastVisitedLocation() :
+					trackUserLocation(user).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	public User getUser(String userName) {
@@ -87,11 +91,18 @@ public class TourGuideService {
 		return providers;
 	}
 	
-	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
+	public Future<VisitedLocation> trackUserLocation(User user) {
+		return CompletableFuture.supplyAsync(() -> {
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			user.addToVisitedLocations(visitedLocation);
+			try {
+				rewardsService.calculateRewards(user).get();
+			} catch (InterruptedException | ExecutionException e) {
+				log.error("trackUserLocation failed");
+				throw new RuntimeException(e);
+			}
+			return visitedLocation;
+		}, trackUserLocationThreadPool);
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
@@ -122,24 +133,17 @@ public class TourGuideService {
 				.collect(Collectors.toList());
 	}
 
-	/*public NearByAttractions getNearByAttractions(String userName) {
-		NearByAttractions nearbyAttractions = new NearByAttractions();
-		User user = getUser(userName);
-		Location userLocation = getUserLocation(user).location;
-
-		nearbyAttractions.setUser(new NBAUser(userLocation));
-
-		nearbyAttractions.setAttractions(rewardsService.getFiveNearestAttractions(user, userLocation));
-
-		return nearbyAttractions;
-	}*/
-	
-	private void addShutDownHook() {
-		Runtime.getRuntime().addShutdownHook(new Thread() { 
-		      public void run() {
-		        tracker.stopTracking();
-		      } 
-		    }); 
+	public void trackUserLocationAwaitTerminationAfterShutdown() {
+		trackUserLocationThreadPool.shutdown();
+		try {
+			if (!trackUserLocationThreadPool.awaitTermination(5, TimeUnit.MINUTES)) {
+				trackUserLocationThreadPool.shutdownNow();
+			}
+		} catch (InterruptedException ex) {
+			trackUserLocationThreadPool.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
+		trackUserLocationThreadPool = Executors.newFixedThreadPool(100);
 	}
 	
 	/**********************************************************************************
