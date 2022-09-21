@@ -4,11 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import gpsUtil.location.Location;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -19,6 +18,7 @@ import rewardCentral.RewardCentral;
 import tourGuide.helper.InternalTestHelper;
 import tourGuide.model.nearby.NbAttraction;
 import tourGuide.model.nearby.RecommandedAttractions;
+import tourGuide.model.user.UserMostRecentLocation;
 import tourGuide.model.user.UserPreferences;
 import tourGuide.service.RewardsService;
 import tourGuide.service.TourGuideService;
@@ -144,8 +144,11 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 		User user = new User(UUID.randomUUID(), "updateUserPreferences", "000", "updateUserPreferences@tourGuide.com");
 		tourGuideService.addUser(user);
+		int beforeUpdate = user.getUserPreferences().getNumberOfChildren();
+		tourGuideService.updateUserPreferences(user.getUserName(), new UserPreferences(2,2,2));
+		int afterUpdate = user.getUserPreferences().getNumberOfChildren();
 
-		assertNotEquals(null, tourGuideService.updateUserPreferences(user.getUserName(), new UserPreferences()));
+		assertNotEquals(beforeUpdate, afterUpdate);
 	}
 
 
@@ -158,9 +161,8 @@ public class TestTourGuideService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 		
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		VisitedLocation visitedLocation;
 		try {
-			visitedLocation = tourGuideService.trackUserLocation(user).get();
+			tourGuideService.trackUserLocation(user).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}
@@ -184,6 +186,30 @@ public class TestTourGuideService {
 		List<Provider> providers = tourGuideService.getTripDeals(user);
 
 		assertEquals(5, providers.size());
+	}
+
+	@Test
+	public void getAllCurrentLocations() {
+		GpsUtil gpsUtil = new GpsUtil();
+		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
+		InternalTestHelper.setInternalUserNumber(0);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		UUID userId = UUID.randomUUID();
+		User user1 = new User(userId, "getAllCurrentLocations", "000", "getAllCurrentLocations@tourGuide.com");
+		User user2 = new User(userId, "getAllCurrentLocations2", "0002", "getAllCurrentLocations@tourGuide.com2");
+		//user.set(Collections.singletonList(new VisitedLocation(userId, new Location(1, 2), new Date())));
+		try {
+			tourGuideService.trackUserLocation(user1).get();
+			tourGuideService.trackUserLocation(user2).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+		tourGuideService.addUser(user1);
+		tourGuideService.addUser(user2);
+		List<UserMostRecentLocation> usersMostRecentLocations = tourGuideService.getAllCurrentLocations();
+
+		assertNotEquals(null, usersMostRecentLocations.get(0));
+		assertEquals(2, usersMostRecentLocations.size());
 	}
 	
 	

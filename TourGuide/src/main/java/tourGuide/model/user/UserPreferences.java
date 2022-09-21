@@ -24,7 +24,10 @@ public class UserPreferences {
 	//
 	private int numberOfChildren = 0;
 	
-	public UserPreferences() {
+	public UserPreferences(int tripDuration,int numberOfAdults, int numberOfChildren) {
+		this.tripDuration = tripDuration;
+		this.numberOfAdults = numberOfAdults;
+		this.numberOfChildren = numberOfChildren;
 	}
 	
 	public void setAttractionProximity(int attractionProximity) {

@@ -19,6 +19,7 @@ import tourGuide.helper.InternalTestHelper;
 import tourGuide.model.nearby.NbAttraction;
 import tourGuide.model.nearby.NbUser;
 import tourGuide.model.nearby.RecommandedAttractions;
+import tourGuide.model.user.UserMostRecentLocation;
 import tourGuide.model.user.UserPreferences;
 import tourGuide.tracker.Tracker;
 import tourGuide.model.user.User;
@@ -90,6 +91,20 @@ public class TourGuideService {
 				cumulatativeRewardPoints);
 		user.setTripDeals(providers);
 		return providers;
+	}
+
+	public List<UserMostRecentLocation> getAllCurrentLocations() {
+		return getAllUsers().stream()
+				.map(user -> {
+					UserMostRecentLocation userMostRecentLocation = new UserMostRecentLocation();
+					userMostRecentLocation.setUserId(user.getUserId());
+					userMostRecentLocation.setMostRecentLocation/*(user.getLastVisitedLocation()*/
+							(user.getVisitedLocations().stream()
+							.reduce((first,second)->second)
+							.orElse(null));
+					return userMostRecentLocation;
+				})
+				.collect(Collectors.toList());
 	}
 	
 	public Future<VisitedLocation> trackUserLocation(User user) {
