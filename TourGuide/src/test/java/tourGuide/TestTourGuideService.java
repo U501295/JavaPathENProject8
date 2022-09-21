@@ -2,6 +2,7 @@ package tourGuide;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.List;
 import java.util.Locale;
@@ -16,6 +17,9 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 import rewardCentral.RewardCentral;
 import tourGuide.helper.InternalTestHelper;
+import tourGuide.model.nearby.NbAttraction;
+import tourGuide.model.nearby.RecommandedAttractions;
+import tourGuide.model.user.UserPreferences;
 import tourGuide.service.RewardsService;
 import tourGuide.service.TourGuideService;
 import tourGuide.model.user.User;
@@ -108,6 +112,43 @@ public class TestTourGuideService {
 		assertEquals(user.getUserId(), visitedLocation.userId);
 	}
 
+	@Test
+	public void getRecommandedAttractions() {
+		GpsUtil gpsUtil = new GpsUtil();
+		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+
+		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
+
+
+		VisitedLocation visitedLocation;
+		try {
+			visitedLocation = tourGuideService.trackUserLocation(user).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+		tourGuideService.addUser(user);
+
+		RecommandedAttractions recommandedAttractions = tourGuideService.getRecommandedAttractions(user.getUserName());
+
+		tourGuideService.trackUserLocationAwaitTerminationAfterShutdown();
+
+		assertEquals(5, 5);
+
+	}
+
+	@Test
+	public void updateUserPreferences() {
+		GpsUtil gpsUtil = new GpsUtil();
+		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		User user = new User(UUID.randomUUID(), "updateUserPreferences", "000", "updateUserPreferences@tourGuide.com");
+		tourGuideService.addUser(user);
+
+		assertNotEquals(null, tourGuideService.updateUserPreferences(user.getUserName(), new UserPreferences()));
+	}
+
+
 
 	@Test
 	public void get5NearbyAttractions() {
@@ -124,7 +165,7 @@ public class TestTourGuideService {
 			throw new RuntimeException(e);
 		}
 
-		List<Attraction> attr = tourGuideService.getFiveNearestAttractions(user,user.getLastVisitedLocation().location);
+		List<NbAttraction> attr = tourGuideService.getFiveNearestAttractions(user,user.getLastVisitedLocation().location);
 
 		tourGuideService.trackUserLocationAwaitTerminationAfterShutdown();
 		
@@ -142,8 +183,6 @@ public class TestTourGuideService {
 
 		List<Provider> providers = tourGuideService.getTripDeals(user);
 
-		tourGuideService.trackUserLocationAwaitTerminationAfterShutdown();
-		
 		assertEquals(5, providers.size());
 	}
 	

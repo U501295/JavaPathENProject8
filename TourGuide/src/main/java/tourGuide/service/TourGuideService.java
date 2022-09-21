@@ -2,13 +2,7 @@ package tourGuide.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -23,6 +17,9 @@ import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 import tourGuide.helper.InternalTestHelper;
 import tourGuide.model.nearby.NbAttraction;
+import tourGuide.model.nearby.NbUser;
+import tourGuide.model.nearby.RecommandedAttractions;
+import tourGuide.model.user.UserPreferences;
 import tourGuide.tracker.Tracker;
 import tourGuide.model.user.User;
 import tourGuide.model.user.UserReward;
@@ -85,8 +82,12 @@ public class TourGuideService {
 	
 	public List<Provider> getTripDeals(User user) {
 		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
-		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(), user.getUserPreferences().getNumberOfAdults(), 
-				user.getUserPreferences().getNumberOfChildren(), user.getUserPreferences().getTripDuration(), cumulatativeRewardPoints);
+		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey,
+				user.getUserId(),
+				user.getUserPreferences().getNumberOfAdults(),
+				user.getUserPreferences().getNumberOfChildren(),
+				user.getUserPreferences().getTripDuration(),
+				cumulatativeRewardPoints);
 		user.setTripDeals(providers);
 		return providers;
 	}
@@ -116,7 +117,7 @@ public class TourGuideService {
 		return nearbyAttractions;
 	}
 
-	public List<Attraction> getFiveNearestAttractions(User user, Location location) {
+	public List<NbAttraction> getFiveNearestAttractions(User user, Location location) {
 
 		return gpsUtil.getAttractions().stream()
 				.map(attraction -> {
@@ -133,6 +134,18 @@ public class TourGuideService {
 				.collect(Collectors.toList());
 	}
 
+	public RecommandedAttractions getRecommandedAttractions(String userName) {
+		RecommandedAttractions recommandedAttractions = new RecommandedAttractions();
+		User user = getUser(userName);
+		Location userLocation = getUserLocation(user).location;
+
+		recommandedAttractions.setNbUser(new NbUser(userLocation));
+
+		recommandedAttractions.setRecoAttractions(getFiveNearestAttractions(user, userLocation));
+
+		return recommandedAttractions;
+	}
+
 	public void trackUserLocationAwaitTerminationAfterShutdown() {
 		trackUserLocationThreadPool.shutdown();
 		try {
@@ -144,6 +157,16 @@ public class TourGuideService {
 			Thread.currentThread().interrupt();
 		}
 		trackUserLocationThreadPool = Executors.newFixedThreadPool(100);
+	}
+
+	public User updateUserPreferences(String userName, UserPreferences userPreferences) {
+		User user = getUser(userName);
+
+		if (null == user) {
+			throw new NoSuchElementException();
+		}
+		user.setUserPreferences(userPreferences);
+		return internalUserMap.replace(user.getUserName(), user);
 	}
 	
 	/**********************************************************************************
@@ -166,7 +189,7 @@ public class TourGuideService {
 		});
 		logger.debug("Created " + InternalTestHelper.getInternalUserNumber() + " internal test users.");
 	}
-	
+
 	private void generateUserLocationHistory(User user) {
 		IntStream.range(0, 3).forEach(i-> {
 			user.addToVisitedLocations(new VisitedLocation(user.getUserId(), new Location(generateRandomLatitude(), generateRandomLongitude()), getRandomTime()));

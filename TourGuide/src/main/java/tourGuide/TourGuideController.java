@@ -1,19 +1,24 @@
 package tourGuide;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import com.jsoniter.output.JsonStream;
 
 import gpsUtil.location.VisitedLocation;
+import tourGuide.model.nearby.RecommandedAttractions;
+import tourGuide.model.user.UserPreferences;
 import tourGuide.service.TourGuideService;
 import tourGuide.model.user.User;
 import tripPricer.Provider;
 
+@Slf4j
 @RestController
 public class TourGuideController {
 
@@ -31,19 +36,9 @@ public class TourGuideController {
 		return JsonStream.serialize(visitedLocation.location);
     }
     
-    //  TODO: Change this method to no longer return a List of Attractions.
- 	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
- 	//  Return a new JSON object that contains:
-    	// Name of Tourist attraction, 
-        // Tourist attractions lat/long, 
-        // The user's location lat/long, 
-        // The distance in miles between the user's location and each of the attractions.
-        // The reward points for visiting each Attraction.
-        //    Note: Attraction reward points can be gathered from RewardsCentral
-    @RequestMapping("/getNearbyAttractions") 
-    public String getNearbyAttractions(@RequestParam String userName) {
-    	VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
-    	return JsonStream.serialize(tourGuideService.getNearByAttractions(visitedLocation));
+    @RequestMapping("/getNearbyAttractions")
+    public RecommandedAttractions getNearbyAttractions(@RequestParam String userName) {
+    	return tourGuideService.getRecommandedAttractions(userName);
     }
     
     @RequestMapping("/getRewards") 
@@ -74,6 +69,22 @@ public class TourGuideController {
     
     private User getUser(String userName) {
     	return tourGuideService.getUser(userName);
+    }
+
+    @PutMapping("/userPreferences/{userName}")
+    public ResponseEntity<?> putUserPreferences(@PathVariable String userName,
+                                                @RequestBody UserPreferences userPreferences) {
+
+        log.debug("request for set userPreferences of userName : {}", userName);
+
+        try {
+            User userSaved = tourGuideService.updateUserPreferences(userName, userPreferences);
+            return ResponseEntity.status(HttpStatus.OK).body(userSaved);
+        } catch (NoSuchElementException e) {
+            String logAndBodyMessage = "error while putting user because missing user with userName=" + userName;
+            log.error(logAndBodyMessage);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(logAndBodyMessage);
+        }
     }
    
 
