@@ -3,15 +3,12 @@ package tourGuide.service;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 import rewardCentral.RewardCentral;
-import tourGuide.model.nearby.NbAttraction;
 import tourGuide.model.user.User;
 import tourGuide.model.user.UserReward;
 
@@ -26,7 +23,7 @@ public class RewardsService {
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
 
-	private ExecutorService calculateRewardsThreadPool = Executors.newFixedThreadPool(100);
+	private ExecutorService calculateRewardsThreadPool = Executors.newFixedThreadPool(1000);
 	
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
@@ -47,16 +44,17 @@ public class RewardsService {
 			calculateRewardsThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
-		calculateRewardsThreadPool = Executors.newFixedThreadPool(100);
+		calculateRewardsThreadPool = Executors.newFixedThreadPool(1000);
 	}
 
 	public Future<Void> calculateRewards(User user) {
+		ExecutorService spy = calculateRewardsThreadPool;
 		return CompletableFuture.supplyAsync(() -> {
 			List<VisitedLocation> userLocations = user.getVisitedLocations();
 			List<Attraction> attractions = gpsUtil.getAttractions();
 			for (VisitedLocation visitedLocation : userLocations) {
 				attractions.parallelStream().forEach(attraction -> {
-					if (user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+					if (user.getUserRewards().stream().noneMatch(r -> r.attraction.attractionName.equals(attraction.attractionName))){
 						boolean isNear = nearAttraction(visitedLocation, attraction);
 						if (isNear) {
 							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction.attractionId, user)));

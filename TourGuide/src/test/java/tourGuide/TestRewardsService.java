@@ -46,6 +46,24 @@ public class TestRewardsService {
 		tourGuideService.trackUserLocationAwaitTerminationAfterShutdown();
 		assertTrue(userRewards.size() == 1);
 	}
+
+	@Test
+	public void CalculateReward() throws ExecutionException, InterruptedException {
+		GpsUtil gpsUtil = new GpsUtil();
+		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
+
+		InternalTestHelper.setInternalUserNumber(0);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+
+		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
+		Attraction attraction = gpsUtil.getAttractions().get(0);
+		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
+		//tourGuideService.trackUserLocation(user);
+		rewardsService.calculateRewards(user).get();
+		tourGuideService.trackUserLocationAwaitTerminationAfterShutdown();
+		assertTrue(user.getUserRewards().size() != 0);
+		assertTrue(user.getUserRewards().get(0).getRewardPoints() > 0);
+	}
 	
 	@Test
 	public void isWithinAttractionProximity() {

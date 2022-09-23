@@ -37,7 +37,7 @@ public class TourGuideService {
 	public final Tracker tracker;
 	boolean testMode = true;
 
-	private ExecutorService trackUserLocationThreadPool = Executors.newFixedThreadPool(100);
+	private ExecutorService trackUserLocationThreadPool = Executors.newFixedThreadPool(1000);
 	
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
@@ -104,6 +104,7 @@ public class TourGuideService {
 							.orElse(null));
 					return userMostRecentLocation;
 				})
+				.parallel()
 				.collect(Collectors.toList());
 	}
 	
@@ -171,7 +172,7 @@ public class TourGuideService {
 			trackUserLocationThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
-		trackUserLocationThreadPool = Executors.newFixedThreadPool(100);
+		trackUserLocationThreadPool = Executors.newFixedThreadPool(1000);
 	}
 
 	public User updateUserPreferences(String userName, UserPreferences userPreferences) {
