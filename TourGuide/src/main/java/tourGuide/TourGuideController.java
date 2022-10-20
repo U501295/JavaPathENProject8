@@ -49,7 +49,6 @@ public class TourGuideController {
     
     @RequestMapping("/getAllCurrentLocations")
     public List<UserMostRecentLocation> getAllCurrentLocations() {
-    	// TODO: Get a list of every user's most recent location as JSON
     	//- Note: does not use gpsUtil to query for their current location, 
     	//        but rather gathers the user's current location from their stored location history.
     	//
