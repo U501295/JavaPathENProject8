@@ -147,7 +147,6 @@ public class TestTourGuideService {
 		int beforeUpdate = user.getUserPreferences().getNumberOfChildren();
 		tourGuideService.updateUserPreferences(user.getUserName(), new UserPreferences(2,2,2));
 		int afterUpdate = user.getUserPreferences().getNumberOfChildren();
-
 		assertNotEquals(beforeUpdate, afterUpdate);
 	}
 

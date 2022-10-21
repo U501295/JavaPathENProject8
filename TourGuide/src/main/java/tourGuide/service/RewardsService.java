@@ -23,7 +23,7 @@ public class RewardsService {
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
 
-	private ExecutorService calculateRewardsThreadPool = Executors.newFixedThreadPool(1000);
+	private ExecutorService calculateRewardsThreadPool = Executors.newFixedThreadPool(100);
 	
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
@@ -48,7 +48,6 @@ public class RewardsService {
 	}
 
 	public Future<Void> calculateRewards(User user) {
-		ExecutorService spy = calculateRewardsThreadPool;
 		return CompletableFuture.supplyAsync(() -> {
 			List<VisitedLocation> userLocations = user.getVisitedLocations();
 			List<Attraction> attractions = gpsUtil.getAttractions();
@@ -65,22 +64,7 @@ public class RewardsService {
 			return null;
 		}, calculateRewardsThreadPool);
 	}
-	
-	/*public void calculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
-		List<Attraction> attractions = gpsUtil.getAttractions();
-		
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction.attractionId, user)));
-					}
-				}
-			}
-		}
-	}*/
-	
+
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		int attractionProximityRange = 200;
 		return getDistance(attraction, location) > attractionProximityRange ? false : true;

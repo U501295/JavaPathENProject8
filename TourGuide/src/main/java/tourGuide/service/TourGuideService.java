@@ -37,7 +37,7 @@ public class TourGuideService {
 	public final Tracker tracker;
 	boolean testMode = true;
 
-	private ExecutorService trackUserLocationThreadPool = Executors.newFixedThreadPool(1000);
+	private ExecutorService trackUserLocationThreadPool = Executors.newFixedThreadPool(100);
 	
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
@@ -98,7 +98,7 @@ public class TourGuideService {
 				.map(user -> {
 					UserMostRecentLocation userMostRecentLocation = new UserMostRecentLocation();
 					userMostRecentLocation.setUserId(user.getUserId());
-					userMostRecentLocation.setMostRecentLocation/*(user.getLastVisitedLocation()*/
+					userMostRecentLocation.setMostRecentLocation
 							(user.getVisitedLocations().stream()
 							.reduce((first,second)->second)
 							.orElse(null));
@@ -172,7 +172,7 @@ public class TourGuideService {
 			trackUserLocationThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
-		trackUserLocationThreadPool = Executors.newFixedThreadPool(1000);
+		trackUserLocationThreadPool = Executors.newFixedThreadPool(100);
 	}
 
 	public User updateUserPreferences(String userName, UserPreferences userPreferences) {
@@ -200,7 +200,6 @@ public class TourGuideService {
 			String email = userName + "@tourGuide.com";
 			User user = new User(UUID.randomUUID(), userName, phone, email);
 			generateUserLocationHistory(user);
-			
 			internalUserMap.put(userName, user);
 		});
 		logger.debug("Created " + InternalTestHelper.getInternalUserNumber() + " internal test users.");
