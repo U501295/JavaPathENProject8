@@ -44,7 +44,7 @@ public class RewardsService {
 			calculateRewardsThreadPool.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
-		calculateRewardsThreadPool = Executors.newFixedThreadPool(1000);
+		calculateRewardsThreadPool = Executors.newFixedThreadPool(100);
 	}
 
 	public Future<Void> calculateRewards(User user) {
