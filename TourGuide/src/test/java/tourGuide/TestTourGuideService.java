@@ -196,7 +196,6 @@ public class TestTourGuideService {
 		UUID userId = UUID.randomUUID();
 		User user1 = new User(userId, "getAllCurrentLocations", "000", "getAllCurrentLocations@tourGuide.com");
 		User user2 = new User(userId, "getAllCurrentLocations2", "0002", "getAllCurrentLocations@tourGuide.com2");
-		//user.set(Collections.singletonList(new VisitedLocation(userId, new Location(1, 2), new Date())));
 		try {
 			tourGuideService.trackUserLocation(user1).get();
 			tourGuideService.trackUserLocation(user2).get();

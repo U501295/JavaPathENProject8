@@ -58,7 +58,6 @@ public class TestRewardsService {
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
-		//tourGuideService.trackUserLocation(user);
 		rewardsService.calculateRewards(user).get();
 		tourGuideService.trackUserLocationAwaitTerminationAfterShutdown();
 		assertTrue(user.getUserRewards().size() != 0);
