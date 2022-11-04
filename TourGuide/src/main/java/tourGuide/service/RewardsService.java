@@ -3,6 +3,10 @@ package tourGuide.service;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
+
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
@@ -13,10 +17,12 @@ import tourGuide.model.user.User;
 import tourGuide.model.user.UserReward;
 
 @Service
+@Slf4j
 public class RewardsService {
     private static final double STATUTE_MILES_PER_NAUTICAL_MILE = 1.15077945;
 
 	// proximity in miles
+	private Logger logger = LoggerFactory.getLogger(RewardsService.class);
     private int defaultProximityBuffer = 10;
 	private int proximityBuffer = defaultProximityBuffer;
 

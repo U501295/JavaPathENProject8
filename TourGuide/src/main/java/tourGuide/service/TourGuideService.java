@@ -122,17 +122,6 @@ public class TourGuideService {
 		}, trackUserLocationThreadPool);
 	}
 
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for(Attraction attraction : gpsUtil.getAttractions()) {
-			if(rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
-		}
-		
-		return nearbyAttractions;
-	}
-
 	public List<NbAttraction> getFiveNearestAttractions(User user, Location location) {
 
 		return gpsUtil.getAttractions().stream()

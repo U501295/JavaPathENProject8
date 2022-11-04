@@ -41,12 +41,7 @@ public class TourGuideController {
     public RecommandedAttractions getNearbyAttractions(@RequestParam String userName) {
     	return tourGuideService.getRecommandedAttractions(userName);
     }
-    
-    @RequestMapping("/getRewards") 
-    public String getRewards(@RequestParam String userName) {
-    	return JsonStream.serialize(tourGuideService.getUserRewards(getUser(userName)));
-    }
-    
+
     @RequestMapping("/getAllCurrentLocations")
     public List<UserMostRecentLocation> getAllCurrentLocations() {
     	//- Note: does not use gpsUtil to query for their current location, 
